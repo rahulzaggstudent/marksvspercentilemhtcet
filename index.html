@@ -4,221 +4,106 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MHT-CET 2026 | Marks vs Percentile Predictor</title>
-<meta name="description" content="Predict your MHT-CET 2026 percentile based on your shift and marks. Uses 2025 data with shift-wise difficulty adjustment.">
+<meta name="description" content="MHT-CET 2026 percentile predictor with shift-wise difficulty adjustment based on 2025 normalisation data.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
   :root {
-    --bg: #0a0f1e;
-    --bg2: #0f1629;
-    --bg3: #151d35;
-    --surface: rgba(255,255,255,0.04);
-    --surface-hover: rgba(255,255,255,0.07);
-    --border: rgba(255,255,255,0.08);
-    --border-strong: rgba(255,255,255,0.14);
-    --text: #e8eaf6;
-    --text-muted: #8892b0;
-    --text-dim: #4a5568;
-    --accent: #4f8ef7;
-    --accent-glow: rgba(79,142,247,0.25);
-    --green: #43d985;
-    --amber: #f6a623;
-    --red: #f05252;
-    --radius: 12px;
-    --radius-sm: 8px;
-    --shadow: 0 4px 24px rgba(0,0,0,0.4);
+    --bg: #0a0f1e; --bg2: #0f1629; --bg3: #151d35;
+    --surface: rgba(255,255,255,0.04); --surface-hover: rgba(255,255,255,0.07);
+    --border: rgba(255,255,255,0.08); --border-strong: rgba(255,255,255,0.14);
+    --text: #e8eaf6; --text-muted: #8892b0; --text-dim: #4a5568;
+    --accent: #4f8ef7; --accent-glow: rgba(79,142,247,0.25);
+    --green: #43d985; --amber: #f6a623; --red: #f05252;
+    --radius: 12px; --radius-sm: 8px; --shadow: 0 4px 24px rgba(0,0,0,0.4);
   }
-
   html { scroll-behavior: smooth; }
-
-  body {
-    font-family: 'Inter', sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-    line-height: 1.6;
-  }
-
-  /* Background gradient orbs */
-  body::before {
-    content: '';
-    position: fixed;
-    top: -200px; left: -200px;
-    width: 600px; height: 600px;
-    background: radial-gradient(circle, rgba(79,142,247,0.12) 0%, transparent 70%);
-    pointer-events: none; z-index: 0;
-  }
-  body::after {
-    content: '';
-    position: fixed;
-    bottom: -200px; right: -200px;
-    width: 500px; height: 500px;
-    background: radial-gradient(circle, rgba(67,217,133,0.08) 0%, transparent 70%);
-    pointer-events: none; z-index: 0;
-  }
+  body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; line-height: 1.6; }
+  body::before { content:''; position:fixed; top:-200px; left:-200px; width:600px; height:600px; background:radial-gradient(circle,rgba(79,142,247,0.12) 0%,transparent 70%); pointer-events:none; z-index:0; }
+  body::after { content:''; position:fixed; bottom:-200px; right:-200px; width:500px; height:500px; background:radial-gradient(circle,rgba(67,217,133,0.08) 0%,transparent 70%); pointer-events:none; z-index:0; }
 
   .page { max-width: 900px; margin: 0 auto; padding: 2rem 1.25rem 4rem; position: relative; z-index: 1; }
 
-  /* ── Header ── */
   header { text-align: center; margin-bottom: 2.5rem; }
-  .badge {
-    display: inline-flex; align-items: center; gap: 6px;
-    background: rgba(79,142,247,0.15); border: 1px solid rgba(79,142,247,0.3);
-    color: var(--accent); font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
-    text-transform: uppercase; padding: 4px 12px; border-radius: 20px; margin-bottom: 1rem;
-  }
-  .badge-dot { width: 6px; height: 6px; background: var(--accent); border-radius: 50%; animation: pulse 2s infinite; }
+  .badge { display:inline-flex; align-items:center; gap:6px; background:rgba(79,142,247,0.15); border:1px solid rgba(79,142,247,0.3); color:var(--accent); font-size:11px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; padding:4px 12px; border-radius:20px; margin-bottom:1rem; }
+  .badge-dot { width:6px; height:6px; background:var(--accent); border-radius:50%; animation:pulse 2s infinite; }
   @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  h1 { font-size:clamp(1.6rem,4vw,2.4rem); font-weight:700; background:linear-gradient(135deg,#e8eaf6 0%,var(--accent) 60%,var(--green) 100%); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; margin-bottom:0.5rem; line-height:1.2; }
+  .subtitle { font-size:14px; color:var(--text-muted); max-width:520px; margin:0 auto; }
 
-  h1 {
-    font-size: clamp(1.6rem, 4vw, 2.4rem);
-    font-weight: 700;
-    background: linear-gradient(135deg, #e8eaf6 0%, var(--accent) 60%, var(--green) 100%);
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-    margin-bottom: 0.5rem; line-height: 1.2;
-  }
-  .subtitle { font-size: 14px; color: var(--text-muted); max-width: 500px; margin: 0 auto; }
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:1.25rem; backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); }
+  .card + .card { margin-top:1rem; }
 
-  /* ── Card ── */
-  .card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 1.25rem;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-  }
-  .card + .card { margin-top: 1rem; }
+  .input-row { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+  @media(max-width:480px) { .input-row { grid-template-columns:1fr; } }
+  label { font-size:12px; font-weight:500; color:var(--text-muted); display:block; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.05em; }
+  select, input[type=number] { width:100%; padding:10px 14px; font-family:'Inter',sans-serif; font-size:14px; font-weight:500; color:var(--text); background:var(--bg3); border:1px solid var(--border-strong); border-radius:var(--radius-sm); outline:none; appearance:none; -webkit-appearance:none; transition:border-color 0.2s,box-shadow 0.2s; }
+  select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238892b0' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 12px center; padding-right:32px; }
+  select:focus, input[type=number]:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-glow); }
+  select option { background:var(--bg2); }
 
-  /* ── Input row ── */
-  .input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-  @media(max-width: 480px) { .input-row { grid-template-columns: 1fr; } }
+  .shift-stats { display:grid; grid-template-columns:repeat(5,1fr); gap:8px; }
+  @media(max-width:600px) { .shift-stats { grid-template-columns:repeat(3,1fr); } }
+  .stat-chip { background:var(--bg3); border:1px solid var(--border); border-radius:var(--radius-sm); padding:10px 12px; transition:background 0.2s; }
+  .stat-chip:hover { background:var(--surface-hover); }
+  .stat-chip-label { font-size:10px; color:var(--text-dim); margin-bottom:4px; text-transform:uppercase; letter-spacing:0.05em; }
+  .stat-chip-val { font-size:15px; font-weight:600; color:var(--text); }
 
-  label { font-size: 12px; font-weight: 500; color: var(--text-muted); display: block; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .diff-section { margin-top:0; }
+  .diff-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+  .diff-title { font-size:12px; font-weight:500; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em; }
+  .diff-score { font-size:13px; font-weight:600; color:var(--text); }
+  .diff-track { height:8px; background:var(--bg3); border-radius:4px; overflow:hidden; position:relative; }
+  .diff-track::before { content:''; position:absolute; inset:0; background:linear-gradient(90deg,var(--green),var(--amber),var(--red)); opacity:0.25; border-radius:4px; }
+  .diff-fill { height:100%; border-radius:4px; transition:width 0.5s cubic-bezier(.4,0,.2,1),background 0.5s; position:relative; z-index:1; }
+  .diff-labels { display:flex; justify-content:space-between; margin-top:4px; }
+  .diff-labels span { font-size:10px; color:var(--text-dim); }
 
-  select, input[type=number] {
-    width: 100%; padding: 10px 14px;
-    font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 500;
-    color: var(--text);
-    background: var(--bg3);
-    border: 1px solid var(--border-strong);
-    border-radius: var(--radius-sm);
-    outline: none; appearance: none; -webkit-appearance: none;
-    transition: border-color 0.2s, box-shadow 0.2s;
-  }
-  select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238892b0' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
-  select:focus, input[type=number]:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
-  select option { background: var(--bg2); }
+  .results-grid { display:grid; grid-template-columns:1.4fr 1fr 1fr; gap:1rem; }
+  @media(max-width:560px) { .results-grid { grid-template-columns:1fr; } }
+  .result-card { border-radius:var(--radius); padding:1.1rem 1.25rem; border:1px solid var(--border); transition:transform 0.2s,box-shadow 0.2s; }
+  .result-card:hover { transform:translateY(-2px); box-shadow:var(--shadow); }
+  .result-card.main { background:linear-gradient(135deg,rgba(79,142,247,0.18) 0%,rgba(79,142,247,0.08) 100%); border-color:rgba(79,142,247,0.3); }
+  .result-card.ci-card, .result-card.band { background:var(--bg3); }
+  .result-label { font-size:11px; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.05em; font-weight:500; }
+  .result-val { font-size:28px; font-weight:700; line-height:1; }
+  .result-val.blue { color:var(--accent); }
+  .result-val.normal { font-size:20px; color:var(--text); }
 
-  /* ── Shift info ── */
-  .shift-stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
-  @media(max-width: 600px) { .shift-stats { grid-template-columns: repeat(3, 1fr); } }
-  @media(max-width: 360px) { .shift-stats { grid-template-columns: repeat(2, 1fr); } }
+  .pill { display:inline-flex; align-items:center; gap:4px; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:600; margin-top:2px; }
+  .pill::before { content:''; width:5px; height:5px; border-radius:50%; background:currentColor; }
+  .p-top { background:rgba(79,142,247,0.18); color:#6fa8f8; border:1px solid rgba(79,142,247,0.3); }
+  .p-vstrong { background:rgba(67,217,133,0.15); color:#43d985; border:1px solid rgba(67,217,133,0.3); }
+  .p-comp { background:rgba(67,217,133,0.1); color:#5ec98a; border:1px solid rgba(67,217,133,0.2); }
+  .p-avg { background:rgba(246,166,35,0.15); color:#f6a623; border:1px solid rgba(246,166,35,0.3); }
+  .p-low { background:rgba(240,82,82,0.15); color:#f05252; border:1px solid rgba(240,82,82,0.3); }
 
-  .stat-chip {
-    background: var(--bg3); border: 1px solid var(--border);
-    border-radius: var(--radius-sm); padding: 10px 12px;
-    transition: background 0.2s;
-  }
-  .stat-chip:hover { background: var(--surface-hover); }
-  .stat-chip-label { font-size: 10px; color: var(--text-dim); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
-  .stat-chip-val { font-size: 15px; font-weight: 600; color: var(--text); }
+  .section-title { font-size:11px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.07em; margin-bottom:0.75rem; }
+  .table-wrap { overflow-x:auto; border-radius:var(--radius-sm); }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  thead tr { background:var(--bg3); }
+  th { padding:9px 12px; text-align:left; font-size:11px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em; border-bottom:1px solid var(--border); white-space:nowrap; }
+  td { padding:8px 12px; border-bottom:1px solid var(--border); color:var(--text); white-space:nowrap; transition:background 0.15s; }
+  tr:last-child td { border-bottom:none; }
+  tr:hover td { background:var(--surface-hover); }
+  tr.hl td { background:rgba(79,142,247,0.1); }
+  tr.hl:hover td { background:rgba(79,142,247,0.16); }
+  tr.hl td:first-child { border-left:2px solid var(--accent); }
 
-  /* ── Difficulty bar ── */
-  .diff-section { margin-top: 0; }
-  .diff-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-  .diff-title { font-size: 12px; font-weight: 500; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
-  .diff-score { font-size: 13px; font-weight: 600; color: var(--text); }
-  .diff-track { height: 8px; background: var(--bg3); border-radius: 4px; overflow: hidden; position: relative; }
-  .diff-track::before {
-    content: '';
-    position: absolute; inset: 0;
-    background: linear-gradient(90deg, var(--green), var(--amber), var(--red));
-    opacity: 0.25; border-radius: 4px;
-  }
-  .diff-fill { height: 100%; border-radius: 4px; transition: width 0.5s cubic-bezier(.4,0,.2,1), background 0.5s; position: relative; z-index: 1; }
-  .diff-labels { display: flex; justify-content: space-between; margin-top: 4px; }
-  .diff-labels span { font-size: 10px; color: var(--text-dim); }
+  .note { font-size:12px; color:var(--text-dim); line-height:1.7; padding:1rem 1.25rem; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); margin-top:1rem; }
+  .note strong { color:var(--text-muted); }
+  .note code { background:rgba(79,142,247,0.12); color:var(--accent); padding:1px 5px; border-radius:3px; font-size:11px; }
+  .divider { height:1px; background:var(--border); margin:1rem 0; }
+  .mt-1 { margin-top:1rem; }
 
-  /* ── Result cards ── */
-  .results-grid { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 1rem; }
-  @media(max-width: 560px) { .results-grid { grid-template-columns: 1fr; } }
-
-  .result-card {
-    border-radius: var(--radius);
-    padding: 1.1rem 1.25rem;
-    border: 1px solid var(--border);
-    transition: transform 0.2s, box-shadow 0.2s;
-  }
-  .result-card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
-
-  .result-card.main {
-    background: linear-gradient(135deg, rgba(79,142,247,0.18) 0%, rgba(79,142,247,0.08) 100%);
-    border-color: rgba(79,142,247,0.3);
-  }
-  .result-card.ci { background: var(--bg3); }
-  .result-card.band { background: var(--bg3); }
-
-  .result-label { font-size: 11px; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 500; }
-  .result-val { font-size: 28px; font-weight: 700; line-height: 1; }
-  .result-val.blue { color: var(--accent); }
-  .result-val.normal { font-size: 20px; color: var(--text); }
-
-  /* ── Pill badges ── */
-  .pill {
-    display: inline-flex; align-items: center; gap: 4px;
-    padding: 4px 12px; border-radius: 20px;
-    font-size: 12px; font-weight: 600; margin-top: 2px;
-  }
-  .pill::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
-  .p-top    { background: rgba(79,142,247,0.18); color: #6fa8f8; border: 1px solid rgba(79,142,247,0.3); }
-  .p-vstrong{ background: rgba(67,217,133,0.15); color: #43d985; border: 1px solid rgba(67,217,133,0.3); }
-  .p-comp   { background: rgba(67,217,133,0.1);  color: #5ec98a; border: 1px solid rgba(67,217,133,0.2); }
-  .p-avg    { background: rgba(246,166,35,0.15);  color: #f6a623; border: 1px solid rgba(246,166,35,0.3); }
-  .p-low    { background: rgba(240,82,82,0.15);   color: #f05252; border: 1px solid rgba(240,82,82,0.3); }
-
-  /* ── Reference table ── */
-  .section-title {
-    font-size: 11px; font-weight: 600; color: var(--text-muted);
-    text-transform: uppercase; letter-spacing: 0.07em;
-    margin-bottom: 0.75rem;
-  }
-  .table-wrap { overflow-x: auto; border-radius: var(--radius-sm); }
-
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  thead tr { background: var(--bg3); }
-  th {
-    padding: 9px 12px; text-align: left;
-    font-size: 11px; font-weight: 600; color: var(--text-muted);
-    text-transform: uppercase; letter-spacing: 0.05em;
-    border-bottom: 1px solid var(--border); white-space: nowrap;
-  }
-  td { padding: 8px 12px; border-bottom: 1px solid var(--border); color: var(--text); white-space: nowrap; transition: background 0.15s; }
-  tr:last-child td { border-bottom: none; }
-  tr:hover td { background: var(--surface-hover); }
-  tr.hl td { background: rgba(79,142,247,0.1); }
-  tr.hl:hover td { background: rgba(79,142,247,0.16); }
-  tr.hl td:first-child { border-left: 2px solid var(--accent); }
-
-  /* ── Note ── */
-  .note {
-    font-size: 12px; color: var(--text-dim); line-height: 1.7;
-    padding: 1rem 1.25rem;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    margin-top: 1rem;
-  }
-  .note strong { color: var(--text-muted); }
-
-  /* ── Divider ── */
-  .divider { height: 1px; background: var(--border); margin: 1rem 0; }
-
-  /* ── Spacing utility ── */
-  .mt-1 { margin-top: 1rem; }
+  .footer { text-align:center; margin-top:2.5rem; padding-top:1.5rem; border-top:1px solid var(--border); }
+  .footer-text { font-size:11px; color:var(--text-dim); line-height:1.8; max-width:600px; margin:0 auto; }
+  .footer-text a { color:var(--text-dim); text-decoration:none; border-bottom:1px dotted rgba(255,255,255,0.15); transition:color 0.2s; }
+  .footer-text a:hover { color:var(--text-muted); }
+  .footer-tags { display:flex; flex-wrap:wrap; justify-content:center; gap:6px; margin-top:10px; }
+  .footer-tag { font-size:9px; color:var(--text-dim); background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); padding:2px 8px; border-radius:10px; letter-spacing:0.04em; }
 </style>
 </head>
 <body>
@@ -227,7 +112,7 @@
   <header>
     <div class="badge"><span class="badge-dot"></span>MHT-CET 2026 · PCM</div>
     <h1>Marks vs Percentile Predictor</h1>
-    <p class="subtitle">Enter your shift and score to get a shift-adjusted percentile estimate based on 2025 normalisation data.</p>
+    <p class="subtitle">Shift-adjusted percentile estimates based on 2025 normalisation data.</p>
   </header>
 
   <!-- Inputs -->
@@ -235,48 +120,31 @@
     <div class="input-row">
       <div>
         <label for="shift-sel">Select your shift</label>
-        <select id="shift-sel" onchange="onShiftChange()"></select>
+        <select id="shift-sel" onchange="update()"></select>
       </div>
       <div>
         <label for="marks-inp">Your marks (0 – 200)</label>
-        <input type="number" id="marks-inp" min="0" max="200" value="110" oninput="onMarksChange()">
+        <input type="number" id="marks-inp" min="0" max="200" value="110" oninput="update()">
       </div>
     </div>
-
     <div class="divider"></div>
-
-    <!-- Shift stats -->
     <div class="shift-stats" id="shift-info"></div>
-
     <div class="divider"></div>
-
-    <!-- Difficulty bar -->
     <div class="diff-section">
       <div class="diff-header">
         <span class="diff-title">Shift difficulty index</span>
         <span class="diff-score" id="diff-val">—</span>
       </div>
-      <div class="diff-track">
-        <div class="diff-fill" id="diff-fill" style="width:50%"></div>
-      </div>
+      <div class="diff-track"><div class="diff-fill" id="diff-fill" style="width:50%"></div></div>
       <div class="diff-labels"><span>Easy</span><span>Hard</span></div>
     </div>
   </div>
 
   <!-- Results -->
   <div class="results-grid mt-1">
-    <div class="result-card main">
-      <div class="result-label">Expected percentile</div>
-      <div class="result-val blue" id="res-pct">—</div>
-    </div>
-    <div class="result-card ci">
-      <div class="result-label">95% confidence range</div>
-      <div class="result-val normal" id="res-ci">—</div>
-    </div>
-    <div class="result-card band">
-      <div class="result-label">Competitive band</div>
-      <div id="res-band">—</div>
-    </div>
+    <div class="result-card main"><div class="result-label">Expected percentile</div><div class="result-val blue" id="res-pct">—</div></div>
+    <div class="result-card ci-card"><div class="result-label">95% confidence range</div><div class="result-val normal" id="res-ci">—</div></div>
+    <div class="result-card band"><div class="result-label">Competitive band</div><div id="res-band">—</div></div>
   </div>
 
   <!-- Reference table -->
@@ -284,27 +152,27 @@
     <div class="section-title">Key marks reference for this shift</div>
     <div class="table-wrap">
       <table>
-        <thead>
-          <tr>
-            <th>Marks</th>
-            <th>Expected %ile</th>
-            <th>CI Low</th>
-            <th>CI High</th>
-            <th>Band</th>
-          </tr>
-        </thead>
+        <thead><tr><th>Marks</th><th>Expected %ile</th><th>CI Low</th><th>CI High</th><th>Band</th></tr></thead>
         <tbody id="ref-tbody"></tbody>
       </table>
     </div>
   </div>
 
-  <!-- Methodology note -->
-  <div class="note">
-    <strong>Methodology:</strong> The 2025 pooled marks→percentile curve is used as the base. Each 2026 shift receives a difficulty adjustment (δ) derived from <code>(shift avg − overall 2026 avg of 90.8) × 0.18</code>. A harder shift (lower avg) shifts the curve rightward — the same marks map to a higher percentile. Median score is cross-weighted to fine-tune the curve shape. Confidence intervals are ±0.8–2.5 %ile depending on marks range. <strong>This is a prediction only;</strong> official Mahapareeksha percentiles use their own normalisation.
+  <!-- Footer -->
+  <div class="footer">
+    <p class="footer-text">Predictions are estimates only — official Mahapareeksha percentiles use their own normalisation. Based on 2025 pooled marks→percentile data with shift-wise difficulty adjustment.</p>
+    <div class="footer-tags">
+      <span class="footer-tag">Cubic Spline</span>
+      <span class="footer-tag">Isotonic Regression</span>
+      <span class="footer-tag">Ridge Regression</span>
+      <span class="footer-tag">Kernel Smoothing</span>
+      <span class="footer-tag">Residual CI</span>
+    </div>
   </div>
 
 </div>
 
+<script src="ml_engine.js"></script>
 <script>
 const shifts = [
   {name:"11 Apr - Morning", avg:95.8, med:91,   pts:413, phy:21.2, che:24.5, mat:50.1},
@@ -325,126 +193,65 @@ const shifts = [
   {name:"20 Apr - Evening", avg:92.6, med:90,   pts:135, phy:22.1, che:24.8, mat:45.7},
 ];
 
-const overallAvg = shifts.reduce((s,x)=>s+x.avg,0)/shifts.length;
+// Build ML model
+const model = MLEngine.buildModel(shifts);
 
-function basePredict(m) {
-  if(m<=30)  return Math.max(0,m*0.5);
-  if(m<=40)  return 10+(m-30)*1.5;
-  if(m<=50)  return 25+(m-40)*0.5;
-  if(m<=60)  return 30+(m-50)*2.2;
-  if(m<=70)  return 52+(m-60)*2.5;
-  if(m<=80)  return 77+(m-70)*1.0;
-  if(m<=90)  return 87+(m-80)*0.5;
-  if(m<=100) return 92+(m-90)*0.28;
-  if(m<=110) return 94.8+(m-100)*0.20;
-  if(m<=120) return 96.8+(m-110)*0.14;
-  if(m<=130) return 98.2+(m-120)*0.065;
-  if(m<=140) return 98.85+(m-130)*0.055;
-  if(m<=150) return 99.4+(m-140)*0.016;
-  if(m<=165) return 99.56+(m-150)*0.012;
-  if(m<=180) return 99.74+(m-165)*0.008;
-  return Math.min(99.98, 99.86+(m-180)*0.006);
-}
-
-function shiftAdjust(shift) {
-  return (overallAvg - shift.avg)*0.18 + (82 - shift.med)*0.05;
-}
-
-function predict(marks, shift) {
-  return Math.max(0, Math.min(99.99, basePredict(marks + shiftAdjust(shift))));
-}
-
-function ciWidth(marks) {
-  if(marks<60||marks>160) return 2.5;
-  if(marks<75||marks>150) return 1.8;
-  if(marks<90||marks>140) return 1.2;
-  return 0.8;
-}
-
-function bandInfo(pct) {
-  if(pct>=99.5) return ['99.5+ Elite','p-top'];
-  if(pct>=99)   return ['99+ Tier','p-top'];
-  if(pct>=97)   return ['Very Strong','p-vstrong'];
-  if(pct>=93)   return ['Competitive','p-comp'];
-  if(pct>=85)   return ['Average','p-avg'];
-  return ['Below Avg','p-low'];
-}
-
-function difficultyIndex(shift) {
-  return Math.min(100, Math.max(0, 50 + (overallAvg - shift.avg)*4));
-}
-
-function diffColor(idx) {
-  if(idx>65) return '#f05252';
-  if(idx>50) return '#f6a623';
-  if(idx>35) return '#4f8ef7';
-  return '#43d985';
-}
-
-// Populate select
+// Populate shift select
 const sel = document.getElementById('shift-sel');
-shifts.forEach((s,i)=>{
+shifts.forEach((s,i) => {
   const o = document.createElement('option');
   o.value = i; o.textContent = s.name;
   sel.appendChild(o);
 });
 
-function renderShiftInfo(shift) {
-  const adj = shiftAdjust(shift);
-  const sign = adj>=0?'+':'';
+function update() {
+  const shift = shifts[parseInt(sel.value)];
+  const marks = parseInt(document.getElementById('marks-inp').value) || 0;
+
+  // ML prediction
+  const p = model.predict(marks, shift);
+  const ci = model.getConfidenceInterval(marks, shift);
+  const di = model.getDifficultyIndex(shift);
+  const delta = model.getShiftDelta(shift);
+  const [bl, bc] = MLEngine.bandInfo(p);
+
+  // Results
+  document.getElementById('res-pct').textContent = p.toFixed(2) + '%ile';
+  document.getElementById('res-ci').textContent = Math.max(0, p - ci).toFixed(2) + ' – ' + Math.min(99.99, p + ci).toFixed(2);
+  document.getElementById('res-band').innerHTML = `<span class="pill ${bc}" style="font-size:14px;padding:6px 14px">${bl}</span>`;
+
+  // Shift info
+  const sign = delta >= 0 ? '+' : '';
   document.getElementById('shift-info').innerHTML = `
     <div class="stat-chip"><div class="stat-chip-label">Participants</div><div class="stat-chip-val">${shift.pts}</div></div>
     <div class="stat-chip"><div class="stat-chip-label">Average score</div><div class="stat-chip-val">${shift.avg}</div></div>
     <div class="stat-chip"><div class="stat-chip-label">Median score</div><div class="stat-chip-val">${shift.med}</div></div>
     <div class="stat-chip"><div class="stat-chip-label">Maths avg</div><div class="stat-chip-val">${shift.mat}</div></div>
-    <div class="stat-chip"><div class="stat-chip-label">Curve shift (δ)</div><div class="stat-chip-val">${sign}${adj.toFixed(2)}</div></div>
+    <div class="stat-chip"><div class="stat-chip-label">Curve shift (δ)</div><div class="stat-chip-val">${sign}${delta.toFixed(2)}</div></div>
   `;
-  const di = difficultyIndex(shift);
-  const fill = document.getElementById('diff-fill');
-  fill.style.width = di+'%';
-  fill.style.background = diffColor(di);
-  document.getElementById('diff-val').textContent = di.toFixed(0)+' / 100';
-}
 
-function renderTable(shift) {
-  const marks = parseInt(document.getElementById('marks-inp').value)||0;
+  // Difficulty bar
+  const fill = document.getElementById('diff-fill');
+  fill.style.width = di + '%';
+  fill.style.background = MLEngine.diffColor(di);
+  document.getElementById('diff-val').textContent = di.toFixed(0) + ' / 100';
+
+  // Table
   const keyMarks = [50,60,70,75,80,85,90,95,100,105,110,115,120,125,130,135,140,145,150,155,160,165,170,180];
   const tbody = document.getElementById('ref-tbody');
   tbody.innerHTML = '';
-  keyMarks.forEach(m=>{
-    const p = predict(m, shift);
-    const ci = ciWidth(m);
-    const [bl,bc] = bandInfo(p);
+  keyMarks.forEach(m => {
+    const mp = model.predict(m, shift);
+    const mci = model.getConfidenceInterval(m, shift);
+    const [mbl, mbc] = MLEngine.bandInfo(mp);
     const tr = document.createElement('tr');
-    if(Math.abs(m-marks)<6) tr.classList.add('hl');
-    tr.innerHTML = `
-      <td><strong>${m}</strong></td>
-      <td><strong>${p.toFixed(2)}</strong></td>
-      <td>${Math.max(0,p-ci).toFixed(2)}</td>
-      <td>${Math.min(99.99,p+ci).toFixed(2)}</td>
-      <td><span class="pill ${bc}">${bl}</span></td>
-    `;
+    if (Math.abs(m - marks) < 6) tr.classList.add('hl');
+    tr.innerHTML = `<td><strong>${m}</strong></td><td><strong>${mp.toFixed(2)}</strong></td><td>${Math.max(0, mp - mci).toFixed(2)}</td><td>${Math.min(99.99, mp + mci).toFixed(2)}</td><td><span class="pill ${mbc}">${mbl}</span></td>`;
     tbody.appendChild(tr);
   });
 }
 
-function updateResult() {
-  const shift = shifts[parseInt(sel.value)];
-  const marks = parseInt(document.getElementById('marks-inp').value)||0;
-  const p = predict(marks, shift);
-  const ci = ciWidth(marks);
-  const [bl,bc] = bandInfo(p);
-  document.getElementById('res-pct').textContent = p.toFixed(2)+'%ile';
-  document.getElementById('res-ci').textContent = Math.max(0,p-ci).toFixed(2)+' – '+Math.min(99.99,p+ci).toFixed(2);
-  document.getElementById('res-band').innerHTML = `<span class="pill ${bc}" style="font-size:14px;padding:6px 14px">${bl}</span>`;
-  renderShiftInfo(shift);
-  renderTable(shift);
-}
-
-function onShiftChange() { updateResult(); }
-function onMarksChange() { updateResult(); }
-
-updateResult();
+update();
 </script>
 </body>
 </html>
