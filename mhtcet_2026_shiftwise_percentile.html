@@ -1,0 +1,249 @@
+
+<h2 class="sr-only">MHT-CET 2026 shift-wise marks vs percentile predictor. Select your shift and enter your marks to get an estimated percentile.</h2>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans)}
+.wrap{padding:1rem 0}
+.top-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.2rem}
+.metric{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:11px 13px}
+.ml{font-size:11px;color:var(--color-text-secondary);margin-bottom:3px}
+.mv{font-size:20px;font-weight:500;color:var(--color-text-primary)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1.2rem;align-items:end}
+label{font-size:13px;color:var(--color-text-secondary);display:block;margin-bottom:5px}
+select,input[type=number]{width:100%;padding:8px 10px;font-size:14px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:var(--color-background-primary);color:var(--color-text-primary)}
+.result-box{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:1.2rem}
+.res-card{border-radius:var(--border-radius-lg);padding:14px 16px;border:0.5px solid var(--color-border-tertiary)}
+.res-card.main{background:#E6F1FB;border-color:#B5D4F4}
+.res-card.ci{background:var(--color-background-secondary)}
+.res-card.band{background:var(--color-background-secondary)}
+.res-label{font-size:11px;color:var(--color-text-secondary);margin-bottom:4px}
+.res-val{font-size:24px;font-weight:500}
+.res-val.blue{color:#185FA5}
+.res-val.normal{color:var(--color-text-primary);font-size:18px}
+.pill{display:inline-block;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:500;margin-top:4px}
+.p-top{background:#E6F1FB;color:#0C447C}
+.p-vstrong{background:#EAF3DE;color:#27500A}
+.p-comp{background:#EAF3DE;color:#3B6D11}
+.p-avg{background:#FAEEDA;color:#633806}
+.p-low{background:#FAECE7;color:#712B13}
+.shift-info{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:1.2rem}
+.si{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:9px 11px}
+.si-l{font-size:10px;color:var(--color-text-tertiary);margin-bottom:2px}
+.si-v{font-size:14px;font-weight:500;color:var(--color-text-primary)}
+.diff-bar-wrap{display:flex;align-items:center;gap:8px;margin-bottom:1.5rem}
+.diff-label{font-size:12px;color:var(--color-text-secondary);width:80px;flex-shrink:0}
+.diff-track{flex:1;height:6px;background:var(--color-background-secondary);border-radius:3px;overflow:hidden}
+.diff-fill{height:100%;border-radius:3px;transition:width 0.3s}
+.diff-val{font-size:12px;font-weight:500;width:60px;text-align:right;color:var(--color-text-secondary)}
+.section-title{font-size:12px;font-weight:500;color:var(--color-text-secondary);margin:1.2rem 0 0.5rem;text-transform:uppercase;letter-spacing:0.04em}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{background:var(--color-background-secondary);color:var(--color-text-secondary);padding:7px 9px;text-align:left;font-weight:500;border-bottom:0.5px solid var(--color-border-tertiary);white-space:nowrap}
+td{padding:6px 9px;border-bottom:0.5px solid var(--color-border-tertiary);color:var(--color-text-primary);white-space:nowrap}
+tr.hl td{background:#E6F1FB}
+tr:hover td{background:var(--color-background-secondary)}
+.note{font-size:11px;color:var(--color-text-tertiary);margin-top:0.8rem;line-height:1.6}
+</style>
+
+<div class="wrap">
+
+<div class="row2">
+  <div>
+    <label>Select your shift</label>
+    <select id="shift-sel" onchange="onShiftChange()"></select>
+  </div>
+  <div>
+    <label>Your marks (0–200)</label>
+    <input type="number" id="marks-inp" min="0" max="200" value="110" oninput="onMarksChange()">
+  </div>
+</div>
+
+<div class="shift-info" id="shift-info"></div>
+
+<div style="margin-bottom:1.2rem">
+  <div class="diff-label" style="font-size:12px;color:var(--color-text-secondary);margin-bottom:6px">Shift difficulty index</div>
+  <div class="diff-bar-wrap">
+    <div class="diff-label">Easy ←</div>
+    <div class="diff-track"><div class="diff-fill" id="diff-fill" style="width:50%;background:#185FA5"></div></div>
+    <div class="diff-label" style="text-align:right">→ Hard</div>
+    <div class="diff-val" id="diff-val"></div>
+  </div>
+</div>
+
+<div class="result-box" id="result-box">
+  <div class="res-card main">
+    <div class="res-label">Expected percentile</div>
+    <div class="res-val blue" id="res-pct">—</div>
+  </div>
+  <div class="res-card ci">
+    <div class="res-label">95% confidence range</div>
+    <div class="res-val normal" id="res-ci">—</div>
+  </div>
+  <div class="res-card band">
+    <div class="res-label">Competitive band</div>
+    <div id="res-band">—</div>
+  </div>
+</div>
+
+<div class="section-title">Key marks reference for this shift</div>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Marks</th><th>Expected %ile</th><th>CI low</th><th>CI high</th><th>Band</th></tr></thead>
+  <tbody id="ref-tbody"></tbody>
+</table>
+</div>
+
+<p class="note">Model methodology: The 2025 pooled marks→percentile curve is used as the base. Each 2026 shift receives a difficulty adjustment (δ) derived from (shift avg − overall 2026 avg of 90.8) × 0.18. A harder shift (lower avg) shifts the curve rightward — same marks maps to higher percentile. Median score is cross-weighted to fine-tune the curve shape. Confidence intervals are ±0.8–2.5%ile depending on marks range. This is a prediction only; official Mahapareeksha percentiles use their own normalisation.</p>
+
+</div>
+
+<script>
+const shifts = [
+  {name:"11 Apr - Morning", avg:95.8, med:91, pts:413, phy:21.2, che:24.5, mat:50.1},
+  {name:"11 Apr - Evening", avg:83.8, med:75, pts:367, phy:20.4, che:23.0, mat:40.3},
+  {name:"13 Apr - Morning", avg:94.6, med:89, pts:368, phy:22.2, che:26.6, mat:45.8},
+  {name:"13 Apr - Evening", avg:92.5, med:86, pts:402, phy:21.9, che:26.5, mat:44.0},
+  {name:"15 Apr - Morning", avg:89.4, med:83, pts:423, phy:23.0, che:23.8, mat:43.8},
+  {name:"15 Apr - Evening", avg:97.1, med:91.5,pts:396, phy:25.4, che:27.8, mat:43.9},
+  {name:"16 Apr - Morning", avg:85.5, med:78, pts:311, phy:22.2, che:24.4, mat:39.0},
+  {name:"16 Apr - Evening", avg:93.3, med:87.5,pts:342, phy:22.7, che:26.8, mat:43.8},
+  {name:"17 Apr - Morning", avg:92.1, med:85, pts:357, phy:23.4, che:23.6, mat:45.1},
+  {name:"17 Apr - Evening", avg:92.4, med:86, pts:266, phy:25.0, che:25.4, mat:42.7},
+  {name:"18 Apr - Morning", avg:90.0, med:82, pts:253, phy:25.4, che:22.7, mat:42.0},
+  {name:"18 Apr - Evening", avg:89.0, med:78.5,pts:232, phy:23.4, che:22.8, mat:42.7},
+  {name:"19 Apr - Morning", avg:92.6, med:88, pts:192, phy:22.9, che:26.7, mat:43.1},
+  {name:"19 Apr - Evening", avg:87.1, med:81, pts:189, phy:21.5, che:24.4, mat:41.2},
+  {name:"20 Apr - Morning", avg:83.1, med:71, pts:115, phy:21.9, che:22.9, mat:38.3},
+  {name:"20 Apr - Evening", avg:92.6, med:90, pts:135, phy:22.1, che:24.8, mat:45.7},
+];
+
+const overallAvg = shifts.reduce((s,x)=>s+x.avg,0)/shifts.length;
+
+const anchors2025 = [
+  [50,30],[55,42],[57,60],[60,52],[62,43],[63,69],[65,72],[66,72],[69,72],
+  [70,77],[74,83],[75,86],[76,81],[77,74],[78,87],[80,87],[83,87],[83,91],
+  [85,90],[88,93],[88,99],[89,88],[91,92],[92,93],[93,95],[94,93],[94,99.4],
+  [96,93],[97,97],[98,94],[98,99],[99,95],[99,99],[102,95],[104,95],[109,96],
+  [112,97],[113,97],[114,97.5],[115,98],[116,97],[117,97],[118,97.9],[120,98.5],
+  [122,98.4],[124,98.5],[125,98.3],[126,98.8],[127,98.4],[128,99],[130,98.3],
+  [130,98.6],[131,98.8],[132,99],[133,99.1],[134,99],[135,99.3],[136,99],
+  [139,99.2],[140,99.5],[141,99.5],[142,99.5],[144,99.6],[146,99.6],[147,99.6],
+  [149,99.5],[150,99.6],[151,99.6],[153,99.7],[154,99.6],[155,99.7],[160,99.86],
+  [167,99.9],[172,99.94],[178,99.97]
+];
+
+function basePredict(marks) {
+  const m = marks;
+  if(m<=30) return Math.max(0,m*0.5);
+  if(m<=40) return 10+(m-30)*1.5;
+  if(m<=50) return 25+(m-40)*0.5;
+  if(m<=60) return 30+(m-50)*2.2;
+  if(m<=70) return 52+(m-60)*2.5;
+  if(m<=80) return 77+(m-70)*1.0;
+  if(m<=90) return 87+(m-80)*0.5;
+  if(m<=100) return 92+(m-90)*0.28;
+  if(m<=110) return 94.8+(m-100)*0.20;
+  if(m<=120) return 96.8+(m-110)*0.14;
+  if(m<=130) return 98.2+(m-120)*0.065;
+  if(m<=140) return 98.85+(m-130)*0.055;
+  if(m<=150) return 99.4+(m-140)*0.016;
+  if(m<=165) return 99.56+(m-150)*0.012;
+  if(m<=180) return 99.74+(m-165)*0.008;
+  return Math.min(99.98, 99.86+(m-180)*0.006);
+}
+
+function shiftAdjust(shift) {
+  const delta = (overallAvg - shift.avg) * 0.18;
+  const medDelta = (82 - shift.med) * 0.05;
+  return delta + medDelta;
+}
+
+function predict(marks, shift) {
+  const adj = shiftAdjust(shift);
+  const adjMarks = marks + adj;
+  return Math.max(0, Math.min(99.99, basePredict(adjMarks)));
+}
+
+function ciWidth(marks) {
+  if(marks<60||marks>160) return 2.5;
+  if(marks<75||marks>150) return 1.8;
+  if(marks<90||marks>140) return 1.2;
+  return 0.8;
+}
+
+function bandInfo(pct) {
+  if(pct>=99.5) return ['99.5+ elite','p-top'];
+  if(pct>=99)   return ['99+ tier','p-top'];
+  if(pct>=97)   return ['Very strong','p-vstrong'];
+  if(pct>=93)   return ['Competitive','p-comp'];
+  if(pct>=85)   return ['Average','p-avg'];
+  return ['Below avg','p-low'];
+}
+
+function difficultyIndex(shift) {
+  const delta = overallAvg - shift.avg;
+  const normalized = Math.min(100, Math.max(0, 50 + delta * 4));
+  return normalized;
+}
+
+const diffColors = (idx) => idx > 65 ? '#A32D2D' : idx > 50 ? '#BA7517' : idx > 35 ? '#185FA5' : '#0F6E56';
+
+const sel = document.getElementById('shift-sel');
+shifts.forEach((s,i)=>{
+  const o = document.createElement('option');
+  o.value = i; o.textContent = s.name;
+  sel.appendChild(o);
+});
+
+function renderShiftInfo(shift) {
+  const di = difficultyIndex(shift);
+  const adj = shiftAdjust(shift).toFixed(2);
+  const adjSign = shiftAdjust(shift) >= 0 ? '+' : '';
+  document.getElementById('shift-info').innerHTML = `
+    <div class="si"><div class="si-l">Participants</div><div class="si-v">${shift.pts}</div></div>
+    <div class="si"><div class="si-l">Average score</div><div class="si-v">${shift.avg}</div></div>
+    <div class="si"><div class="si-l">Median score</div><div class="si-v">${shift.med}</div></div>
+    <div class="si"><div class="si-l">Maths avg</div><div class="si-v">${shift.mat}</div></div>
+    <div class="si"><div class="si-l">Curve shift (δ)</div><div class="si-v">${adjSign}${adj} marks</div></div>
+  `;
+  const fill = document.getElementById('diff-fill');
+  fill.style.width = di + '%';
+  fill.style.background = diffColors(di);
+  document.getElementById('diff-val').textContent = di.toFixed(0) + '/100';
+}
+
+function renderTable(shift) {
+  const marks = document.getElementById('marks-inp').value;
+  const keyMarks = [50,60,70,75,80,85,90,95,100,105,110,115,120,125,130,135,140,145,150,155,160,165,170,180];
+  const tbody = document.getElementById('ref-tbody');
+  tbody.innerHTML = '';
+  keyMarks.forEach(m=>{
+    const p = predict(m, shift);
+    const ci = ciWidth(m);
+    const [bl, bc] = bandInfo(p);
+    const tr = document.createElement('tr');
+    if(Math.abs(m - parseInt(marks)) < 6) tr.classList.add('hl');
+    tr.innerHTML = `<td>${m}</td><td><strong>${p.toFixed(2)}</strong></td><td>${Math.max(0,p-ci).toFixed(2)}</td><td>${Math.min(99.99,p+ci).toFixed(2)}</td><td><span class="pill ${bc}">${bl}</span></td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function updateResult() {
+  const idx = parseInt(sel.value);
+  const shift = shifts[idx];
+  const marks = parseInt(document.getElementById('marks-inp').value)||0;
+  const p = predict(marks, shift);
+  const ci = ciWidth(marks);
+  const [bl, bc] = bandInfo(p);
+  document.getElementById('res-pct').textContent = p.toFixed(2) + '%ile';
+  document.getElementById('res-ci').textContent = Math.max(0,p-ci).toFixed(2) + ' – ' + Math.min(99.99,p+ci).toFixed(2);
+  document.getElementById('res-band').innerHTML = `<span class="pill ${bc}" style="font-size:14px;padding:5px 12px">${bl}</span>`;
+  renderShiftInfo(shift);
+  renderTable(shift);
+}
+
+function onShiftChange() { updateResult(); }
+function onMarksChange() { updateResult(); }
+
+updateResult();
+</script>
